@@ -17,6 +17,38 @@ WO <- st_read('https://data.cityofnewyork.us/resource/bdjm-n7q4.geojson?$limit=9
 
 WO_df <- WO %>% st_drop_geometry() 
 
+### Census data crosswalk
+# cross walk from census tract to NTA
+# download.file("https://www1.nyc.gov/assets/planning/download/office/planning-level/nyc-population/census2010/nyc2010census_tabulation_equiv.xlsx", destfile = "data/input/nyc_ct_nta_crosswalk.xlsx")
+cross_ct_nta <- read_xlsx("data/input/nyc_ct_nta_crosswalk.xlsx", sheet = "NTA to 2010 CT equivalency", skip = 2) %>%
+  clean_names() %>%
+  slice(2:n()) %>%
+  rename(
+    Borough = borough,
+    NTACode = neighborhood_tabulation_area_nta, 
+    NTAName = x7, 
+    CountyFIPS = x2010_census_bureau_fips_county_code, 
+    BoroCode = x2010_nyc_borough_code, 
+    CensusTract = x2010_census_tract
+  ) %>%
+  mutate(GEO_ID = paste0("1400000US", "36", CountyFIPS, CensusTract))
+
+### Population data to pull from ACS
+# https://api.census.gov/data/2019/acs/acs5/subject/variables.html
+# Income data at census tract level
+census_pop <- getCensus(
+  name = "acs/acs5/subject",
+  # 2019 since NTAs are 2010 because canopy data is 2017
+  vintage = 2019,
+  vars = c('NAME', 'GEO_ID', 'S0101_C01_001E'), 
+  region = "tract:*", 
+  regionin = "state:36+county:005,047,081,085,061")
+
+nta_pop <- cross_ct_nta %>%
+  left_join(census_pop, by="GEO_ID") %>%
+  group_by(NTACode) %>%
+  summarise(nta_pop = sum(S0101_C01_001E, na.rm=TRUE))
+
 ### NTA Shapefile from NYC Planning 
 # https://www1.nyc.gov/site/planning/data-maps/open-data/census-download-metadata.page
 nta_shp <- st_read('https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2010/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson') %>%
@@ -28,7 +60,32 @@ nta_canopy <- read.csv("data/input/raw/canopy_streettree_summaries/canopystreett
 
 ### Join nta shapefile and canopy cover data
 nta_canopy_shp <- nta_shp %>%
-  left_join(nta_canopy, by = c("NTACode" = "ntacode"))
+  left_join(nta_canopy, by = c("NTACode" = "ntacode")) %>%
+  left_join(nta_pop, by = "NTACode")
+
+### Tree plantings work orders 2016 and on
+WO_treeplantings <- WO %>%
+  filter(wocategory == "Tree Planting") %>%
+  filter(year >=2016)
+
+## Note: unable to determine if the tree planting is a new space because the id's are NA or unique to the work order
+
+WO_history <- WO %>%
+  group_by(geometry) %>%
+  arrange(desc(createddate)) %>%
+  summarise(
+    recent_created = first(createddate.y), 
+    recent_tpstructure = first(tpstructure), 
+    recent_tpcondition = first(tpcondition), 
+    recent_update = first(updateddate.y),
+    
+    recent_psstatus = first(psstatus),
+    
+    previous_created = nth(createddate.y, 2), 
+    previous_tpstructure = nth(tpstructure, 2), 
+    previous_tpcondition = nth(tpcondition, 2), 
+    previous_update = nth(updateddate.y, 2)
+  )
 
 ## Tree Plantings Time Series -----------------------------------------------
 
@@ -55,15 +112,14 @@ WO_yearly_plants %>%
 
 ## Tree Plantings Spatial -----------------------------------------------
 
-### Tree plantings work orders 2016 and on
-WO_treeplantings <- WO %>%
-  filter(wocategory == "Tree Planting") %>%
-  filter(year >=2016)
-
 ### Identify NTA for each tree planting work order after 2015
-nta_plantings <- st_join(nta_shp, WO_treeplantings) %>%
+nta_plantings <- st_join(nta_canopy_shp, WO_treeplantings) %>%
   group_by(NTACode, NTAName) %>%
   summarise(nta_count = n()) 
+
+nta_total <- nta_plantings %>%
+  st_drop_geometry() %>%
+  left_join(nta_canopy_shp, by = "NTACode")
 
 ## Map
 
@@ -89,4 +145,12 @@ map_nta_plantings <- leaflet() %>%
   addLegend("bottomright", pal = pal_nta, values = nta_plantings$nta_count,
             title = "Number of Tree Plantings",
             opacity = 1)
+
+
+## Correlations 
+
+nta_total %>%
+  filter(nta_pop > 10000) %>%
+  ggplot(aes(x = canopy2017percent, y = nta_count, color = BoroName)) + geom_point() + facet_wrap(~BoroName)
+
 
