@@ -20,7 +20,7 @@ WO_df <- WO %>% st_drop_geometry()
 ### Census data crosswalk
 # cross walk from census tract to NTA
 # download.file("https://www1.nyc.gov/assets/planning/download/office/planning-level/nyc-population/census2010/nyc2010census_tabulation_equiv.xlsx", destfile = "data/input/nyc_ct_nta_crosswalk.xlsx")
-cross_ct_nta <- read_xlsx("data/input/nyc_ct_nta_crosswalk.xlsx", sheet = "NTA to 2010 CT equivalency", skip = 2) %>%
+cross_ct_nta <- read_xlsx("data/input/raw/nyc_ct_nta_crosswalk.xlsx", sheet = "NTA to 2010 CT equivalency", skip = 2) %>%
   clean_names() %>%
   slice(2:n()) %>%
   rename(
@@ -65,27 +65,12 @@ nta_canopy_shp <- nta_shp %>%
 
 ### Tree plantings work orders 2016 and on
 WO_treeplantings <- WO %>%
-  filter(wocategory == "Tree Planting") %>%
+  filter(wocategory == "Tree Planting", 
+         wotype == "Tree Plant-Street Tree Block" | wotype == "Tree Plant-Park Tree" | wotype == "Tree Plant-Street Tree") %>%
   filter(year >=2016)
 
 ## Note: unable to determine if the tree planting is a new space because the id's are NA or unique to the work order
 
-WO_history <- WO %>%
-  group_by(geometry) %>%
-  arrange(desc(createddate)) %>%
-  summarise(
-    recent_created = first(createddate.y), 
-    recent_tpstructure = first(tpstructure), 
-    recent_tpcondition = first(tpcondition), 
-    recent_update = first(updateddate.y),
-    
-    recent_psstatus = first(psstatus),
-    
-    previous_created = nth(createddate.y, 2), 
-    previous_tpstructure = nth(tpstructure, 2), 
-    previous_tpcondition = nth(tpcondition, 2), 
-    previous_update = nth(updateddate.y, 2)
-  )
 
 ## Tree Plantings Time Series -----------------------------------------------
 

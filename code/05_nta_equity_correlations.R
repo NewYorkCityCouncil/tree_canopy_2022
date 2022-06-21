@@ -1,0 +1,99 @@
+# NTA Correlation Plots
+
+
+## Load Libraries -----------------------------------------------
+
+source("code/00_load_dependencies.R")
+
+## Read and Join Data -----------------------------------------------
+
+### Census data crosswalk
+# cross walk from census tract to NTA
+# download.file("https://www1.nyc.gov/assets/planning/download/office/planning-level/nyc-population/census2010/nyc2010census_tabulation_equiv.xlsx", destfile = "data/input/nyc_ct_nta_crosswalk.xlsx")
+cross_ct_nta <- read_xlsx("data/input/raw/nyc_ct_nta_crosswalk.xlsx", sheet = "NTA to 2010 CT equivalency", skip = 2) %>%
+  clean_names() %>%
+  slice(2:n()) %>%
+  rename(
+    Borough = borough,
+    NTACode = neighborhood_tabulation_area_nta, 
+    NTAName = x7, 
+    CountyFIPS = x2010_census_bureau_fips_county_code, 
+    BoroCode = x2010_nyc_borough_code, 
+    CensusTract = x2010_census_tract
+  ) %>%
+  mutate(GEO_ID = paste0("1400000US", "36", CountyFIPS, CensusTract))
+
+### Population data to pull from ACS
+# https://api.census.gov/data/2019/acs/acs5/subject/variables.html
+# Income data at census tract level
+census_pop <- getCensus(
+  name = "acs/acs5/subject",
+  # 2019 since NTAs are 2010 because canopy data is 2017
+  vintage = 2019,
+  vars = c('NAME', 'GEO_ID', 'S0101_C01_001E'), 
+  region = "tract:*", 
+  regionin = "state:36+county:005,047,081,085,061")
+
+nta_pop <- cross_ct_nta %>%
+  left_join(census_pop, by="GEO_ID") %>%
+  group_by(NTACode) %>%
+  summarise(nta_pop = sum(S0101_C01_001E, na.rm=TRUE))
+
+### Temperature data
+# https://a816-dohbesp.nyc.gov/IndicatorPublic/VisualizationData.aspx?id=2141,719b87,107,Summarize 
+temp <- read.csv("data/input/raw/Daytime Summer Surface Temperature.csv", header = TRUE, skip = 6) %>%
+  filter(GeoTypeName == "Neighborhood (NTA)") %>%
+  mutate(Geography = sub(" ", "", Geography))
+
+### Canopy data from Nature Conservancy
+canopy <- read.csv("data/input/raw/equity_data/equity_data_supp_nta.csv", header = TRUE)
+
+corr_df <- nta_pop %>%
+  # Note: NTAs that are mostly parks / airports are removed
+  left_join(canopy, by = c("NTACode" = "ntacode")) %>%
+  left_join(temp, by = c("ntaname" = "Geography")) %>%
+  # double check these are the NTAs in CD25
+  mutate(CM25 = as.factor(ifelse(ntaname == "Jackson Heights" | ntaname == "Elmhurst", 1, 0)))
+
+## Correlation Plots -----------------------------------------------
+
+plot <- 
+  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = CM25)) + 
+  geom_point() + 
+  scale_color_manual(values=c("#2F56A6", "#800000", "#666666")) +
+  geom_smooth(aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = "lm"), method='lm', formula= y~x, se = FALSE) +
+  ggtitle("Canopy Cover and Heat in NYC", "Comparing Percentage of Canopy Coverage and Daytime Summer Surface Temperature for Every Neighborhood (NTA)") +
+  labs(
+    x = "Canopy Coverage (%)",
+    y = "Average Temperature (Degrees Fahrenheit)",
+    color = "Council District 25",
+    caption = expression(paste(italic("Source: NYC DOHMH: Environment & Health Data Portal; Nature Conservancy: The State of the Urban Forest in New York City")))
+  ) +
+  
+  geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
+  geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
+  
+  
+  theme(legend.position="none", legend.text = element_text(size=8),
+        legend.title = element_text(size=10, family = 'Georgia'),
+#        text = element_text(family = "Open Sans"),
+        panel.grid.major = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(family = "Georgia",size = 14),
+        axis.title.y = element_text(size = 11, 
+                                    margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.y = element_text(size = 11, 
+                                   margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.x = element_text(size = 11, 
+                                   margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.x = element_text(size = 11, 
+                                    margin = margin(t = 10, r = 0, b = 0, l = 0))) 
+
+ggsave(plot, filename = "visuals/canopy_temp_plot.png", 
+       units = c("in"), width= 10, height= 6)
+
+
