@@ -76,36 +76,31 @@ corr_df <- nta_pop %>%
   # double check these are the NTAs in CD25
   mutate(
     park_perc = park_area / unit_area_acres, 
+    rank_park_perc = rank(park_perc),
     CM25 = as.factor(ifelse(ntaname == "Jackson Heights" | ntaname == "Elmhurst", 1, 0))
     )
 
 ## Correlation Plots -----------------------------------------------
 
+# Canopy Cover and Heat Plot (no CM, no park acreage)
 plot <- 
-  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = park_perc)) + 
-  geom_point() + 
-  scale_color_manual(values=c("#2F56A6", "#800000", "#666666")) +
+  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit)) + 
+  geom_point(color = "#2F56A6") + 
   geom_smooth(aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = "lm"), method='lm', formula= y~x, se = FALSE) +
+  scale_color_manual(values=c("#222222")) +
   ggtitle("Canopy Cover and Heat in NYC", "Comparing Percentage of Canopy Coverage and Daytime Summer Surface Temperature for Every Neighborhood (NTA)") +
   labs(
     x = "Canopy Coverage (%)",
     y = "Average Temperature (Degrees Fahrenheit)",
-    color = "Council District 25",
     caption = expression(paste(italic("Source: NYC DOHMH: Environment & Health Data Portal; Nature Conservancy: The State of the Urban Forest in New York City")))
   ) +
   
-  # geom_vline(xintercept = median(corr_df$canopy_2017_pct, na.rm=TRUE),
-  #            color ="#666666",linetype = "dashed") +
-  # geom_hline(yintercept = median(corr_df$Degrees.Fahrenheit, na.rm=TRUE),
-  #            color ="#666666",linetype = "dashed") +
-  # 
-  # facet_wrap(~boroname) + 
-
-  # geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
-  # annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
-  # geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
-  # annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
+  geom_vline(xintercept = median(corr_df$canopy_2017_pct, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
+  geom_hline(yintercept = median(corr_df$Degrees.Fahrenheit, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
   
+  # facet_wrap(~boroname) + 
   
   theme(legend.position="none", legend.text = element_text(size=8),
         legend.title = element_text(size=10, family = 'Georgia'),
@@ -124,7 +119,99 @@ plot <-
         axis.title.x = element_text(size = 11, 
                                     margin = margin(t = 10, r = 0, b = 0, l = 0))) 
 
-ggsave(plot, filename = "visuals/canopy_temp_park_plot.png", 
+ggsave(plot, filename = "visuals/canopy_temp_plot.png", 
+       units = c("in"), width= 10, height= 6)
+
+# Canopy Coverage and Heat w/ CD25 (no park acreage)
+plot <- 
+  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = CM25)) + 
+  geom_point() + 
+   scale_color_manual(values=c("#2F56A6", "#800000", "#222222")) +
+   geom_smooth(aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = "lm"), method='lm', formula= y~x, se = FALSE) +
+  ggtitle("Canopy Cover and Heat in NYC", "Comparing Percentage of Canopy Coverage and Daytime Summer Surface Temperature for Every Neighborhood (NTA)") +
+  labs(
+    x = "Canopy Coverage (%)",
+    y = "Average Temperature (Degrees Fahrenheit)",
+    color = "Percentage\nPark Acreage\n(Rank)",
+    caption = expression(paste(italic("Source: NYC DOHMH: Environment & Health Data Portal; Nature Conservancy: The State of the Urban Forest in New York City")))
+  ) +
+  
+  geom_vline(xintercept = median(corr_df$canopy_2017_pct, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
+  geom_hline(yintercept = median(corr_df$Degrees.Fahrenheit, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
+  
+  # facet_wrap(~boroname) + 
+  
+  geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
+  geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
+  annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
+  
+  theme(legend.position="none", legend.text = element_text(size=8),
+        legend.title = element_text(size=10, family = 'Georgia'),
+        #        text = element_text(family = "Open Sans"),
+        panel.grid.major = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(family = "Georgia",size = 14),
+        axis.title.y = element_text(size = 11, 
+                                    margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.y = element_text(size = 11, 
+                                   margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.x = element_text(size = 11, 
+                                   margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.x = element_text(size = 11, 
+                                    margin = margin(t = 10, r = 0, b = 0, l = 0))) 
+
+ggsave(plot, filename = "visuals/canopy_temp_plot_CD25.png", 
        units = c("in"), width= 10, height= 6)
 
 
+# Canopy Coverage and Heat w/ Park Acreage (no CD25)
+plot <- 
+  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = rank_park_perc)) + 
+  geom_point() + 
+  #  scale_color_manual(values=c("#2F56A6", "#800000", "#222222")) +
+  #  geom_smooth(aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = "lm"), method='lm', formula= y~x, se = FALSE) +
+  ggtitle("Canopy Cover and Heat in NYC", "Comparing Percentage of Canopy Coverage and Daytime Summer Surface Temperature for Every Neighborhood (NTA)") +
+  labs(
+    x = "Canopy Coverage (%)",
+    y = "Average Temperature (Degrees Fahrenheit)",
+    color = "Percentage\nPark Acreage\n(Rank)",
+    caption = expression(paste(italic("Source: NYC DOHMH: Environment & Health Data Portal; Nature Conservancy: The State of the Urban Forest in New York City")))
+  ) +
+  
+  geom_vline(xintercept = median(corr_df$canopy_2017_pct, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
+  geom_hline(yintercept = median(corr_df$Degrees.Fahrenheit, na.rm=TRUE),
+             color ="#666666",linetype = "dashed") +
+  
+  # facet_wrap(~boroname) + 
+  
+  # geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
+  # annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
+  # geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
+  # annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
+  
+  
+  theme(legend.position="right", legend.text = element_text(size=8),
+        legend.title = element_text(size=10, family = 'Georgia'),
+        #        text = element_text(family = "Open Sans"),
+        panel.grid.major = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(family = "Georgia",size = 14),
+        axis.title.y = element_text(size = 11, 
+                                    margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.y = element_text(size = 11, 
+                                   margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.text.x = element_text(size = 11, 
+                                   margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.x = element_text(size = 11, 
+                                    margin = margin(t = 10, r = 0, b = 0, l = 0))) 
+
+ggsave(plot, filename = "visuals/canopy_temp_plot_park.png", 
+       units = c("in"), width= 10, height= 6)
