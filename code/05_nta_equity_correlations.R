@@ -4,6 +4,7 @@
 ## Load Libraries -----------------------------------------------
 
 source("code/00_load_dependencies.R")
+sf_use_s2(FALSE)
 
 ## Read and Join Data -----------------------------------------------
 
@@ -39,6 +40,25 @@ nta_pop <- cross_ct_nta %>%
   group_by(NTACode) %>%
   summarise(nta_pop = sum(S0101_C01_001E, na.rm=TRUE))
 
+### NTA Shapefile from NYC Planning 
+# https://www1.nyc.gov/site/planning/data-maps/open-data/census-download-metadata.page
+nta_shp <- st_read('https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2010/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson') %>%
+  st_transform("+proj=longlat +datum=WGS84") 
+
+### Parks Properties 
+# https://data.cityofnewyork.us/Recreation/Parks-Properties/enfh-gkve
+parks_prop <- read_sf("https://data.cityofnewyork.us/api/geospatial/enfh-gkve?method=export&format=GeoJSON") %>%
+  st_transform("+proj=longlat +datum=WGS84") 
+
+nta_parks <- st_intersection(nta_shp, parks_prop) %>% 
+  # units is [m^2]
+  mutate(intersect_area = as.numeric(round(st_area(.), 0))) %>%
+  st_drop_geometry() %>%
+  group_by(NTACode, NTAName) %>%
+  summarise(park_area = sum(intersect_area)) %>%
+  # convert from square meters to acres
+  mutate(park_area = park_area / 4047 )
+
 ### Temperature data
 # https://a816-dohbesp.nyc.gov/IndicatorPublic/VisualizationData.aspx?id=2141,719b87,107,Summarize 
 temp <- read.csv("data/input/raw/Daytime Summer Surface Temperature.csv", header = TRUE, skip = 6) %>%
@@ -49,16 +69,20 @@ temp <- read.csv("data/input/raw/Daytime Summer Surface Temperature.csv", header
 canopy <- read.csv("data/input/raw/equity_data/equity_data_supp_nta.csv", header = TRUE)
 
 corr_df <- nta_pop %>%
+  left_join(nta_parks, by = "NTACode") %>%
   # Note: NTAs that are mostly parks / airports are removed
   left_join(canopy, by = c("NTACode" = "ntacode")) %>%
   left_join(temp, by = c("ntaname" = "Geography")) %>%
   # double check these are the NTAs in CD25
-  mutate(CM25 = as.factor(ifelse(ntaname == "Jackson Heights" | ntaname == "Elmhurst", 1, 0)))
+  mutate(
+    park_perc = park_area / unit_area_acres, 
+    CM25 = as.factor(ifelse(ntaname == "Jackson Heights" | ntaname == "Elmhurst", 1, 0))
+    )
 
 ## Correlation Plots -----------------------------------------------
 
 plot <- 
-  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = CM25)) + 
+  ggplot(data = corr_df, aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = park_perc)) + 
   geom_point() + 
   scale_color_manual(values=c("#2F56A6", "#800000", "#666666")) +
   geom_smooth(aes(x = canopy_2017_pct, y = Degrees.Fahrenheit, color = "lm"), method='lm', formula= y~x, se = FALSE) +
@@ -70,10 +94,17 @@ plot <-
     caption = expression(paste(italic("Source: NYC DOHMH: Environment & Health Data Portal; Nature Conservancy: The State of the Urban Forest in New York City")))
   ) +
   
-  geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
-  annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
-  geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
-  annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
+  # geom_vline(xintercept = median(corr_df$canopy_2017_pct, na.rm=TRUE),
+  #            color ="#666666",linetype = "dashed") +
+  # geom_hline(yintercept = median(corr_df$Degrees.Fahrenheit, na.rm=TRUE),
+  #            color ="#666666",linetype = "dashed") +
+  # 
+  # facet_wrap(~boroname) + 
+
+  # geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
+  # annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
+  # geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
+  # annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
   
   
   theme(legend.position="none", legend.text = element_text(size=8),
@@ -93,7 +124,7 @@ plot <-
         axis.title.x = element_text(size = 11, 
                                     margin = margin(t = 10, r = 0, b = 0, l = 0))) 
 
-ggsave(plot, filename = "visuals/canopy_temp_plot.png", 
+ggsave(plot, filename = "visuals/canopy_temp_park_plot.png", 
        units = c("in"), width= 10, height= 6)
 
 
