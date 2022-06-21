@@ -5,7 +5,8 @@
 #' 
 #' IF YOU DO NOT WANT TO INSTALL ANY OF THESE PACKAGES, DO NOT RUN THIS CODE.
 
-list.of.packages <- c("tidyverse", "janitor", "sf", "vroom", "leaflet", "htmltools", "readxl", "censusapi")
+list.of.packages <- c("tidyverse", "janitor", "sf", "vroom", "leaflet", "htmltools", "readxl", "censusapi", 'raster', 'rgdal', # for spTransform
+                      'htmlwidgets','colorRamps', 'leaflet.extras')
 
 # checks if packages has been previously installed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
