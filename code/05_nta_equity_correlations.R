@@ -102,6 +102,9 @@ plot <-
   
   # facet_wrap(~boroname) + 
   
+  annotate("text", x = 24.5, y = 92.5, label = "Median Canopy Coverage") +
+  annotate("text", x = 47, y = 98.8, label = "Median Temperature") +
+  
   theme(legend.position="none", legend.text = element_text(size=8),
         legend.title = element_text(size=10, family = 'Georgia'),
 #        text = element_text(family = "Open Sans"),
@@ -148,6 +151,14 @@ plot <-
   geom_curve(x=11, y=101, xend=17, yend=99, arrow = arrow(length = unit(0.5, "cm"))) +
   annotate("text", x = 10.5, y = 101.2, label = "Jackson Heights") +
   
+  # annotate("text", x = 10, y = 103.5, label = "Low Canopy Coverage\nHigh Temperature") +
+  # annotate("text", x = 45, y = 103.5, label = "High Canopy Coverage\nHigh Temperature") +
+  # annotate("text", x = 10, y = 93, label = "Low Canopy Coverage\nLow Temperature") +
+  # annotate("text", x = 45, y = 93, label = "High Canopy Coverage\nLow Temperature") +
+  
+  annotate("text", x = 24.5, y = 92.5, label = "Median Canopy Coverage") +
+  annotate("text", x = 47, y = 98.8, label = "Median Temperature") +
+  
   theme(legend.position="none", legend.text = element_text(size=8),
         legend.title = element_text(size=10, family = 'Georgia'),
         #        text = element_text(family = "Open Sans"),
@@ -189,6 +200,9 @@ plot <-
              color ="#666666",linetype = "dashed") +
   
   # facet_wrap(~boroname) + 
+  
+  annotate("text", x = 25, y = 92.5, label = "Median Canopy Coverage") +
+  annotate("text", x = 46, y = 98.8, label = "Median Temperature") +
   
   # geom_segment(x=11, y=102, xend=15.15, yend=100.9, arrow = arrow(length = unit(0.5, "cm"))) +
   # annotate("text", x = 10.8, y = 102.2, label = "Elmhurst") +
