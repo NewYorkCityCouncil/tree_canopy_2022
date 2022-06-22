@@ -5,8 +5,11 @@
 #' 
 #' IF YOU DO NOT WANT TO INSTALL ANY OF THESE PACKAGES, DO NOT RUN THIS CODE.
 
-list.of.packages <- c("tidyverse", "janitor", "sf", "vroom", "leaflet", "htmltools", "readxl", "censusapi", 'raster', 'rgdal', # for spTransform
-                      'htmlwidgets','colorRamps', 'leaflet.extras')
+list.of.packages <- c("tidyverse", "janitor", "sf", "vroom", 
+                      "leaflet", "htmltools", "readxl", "censusapi",
+                      'raster', 'rgdal', # for spTransform
+                      'htmlwidgets','colorRamps', 'leaflet.extras',
+                      'lwgeom')
 
 # checks if packages has been previously installed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -33,3 +36,18 @@ unzip_sf <- function(zip_url) {
   unlist(temp2)
   return(your_SHP_file)
 }
+
+
+# function to download file
+file_dl <- function(url) {
+     temp <- tempfile()
+     #download the file from the internet save to 'temp' 
+       download.file(url, temp)
+     your_TIF_file <- temp
+     unlist(temp)
+     return(your_TIF_file)
+   }
+
+
+# avoid sci notation
+options(scipen = 999)
