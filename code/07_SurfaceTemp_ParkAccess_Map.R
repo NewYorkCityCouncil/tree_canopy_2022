@@ -81,9 +81,9 @@ map <-
   addLegend(position = "topleft", 
             pal = legend_pal, values = legend_val, 
             title = paste0("Surface Temperature Deviation from Mean", 
-                           "<br>", "(Daytime Summer, 93.5°)"),
-            labFormat = labelFormat(prefix = " ",
-                                    suffix = "°"))  %>% 
+                           "<br>", "(Daytime Summer, 93.5°F)"),
+            labFormat = labelFormat(prefix = "   ", between = "  &ndash;",
+                                    suffix = "°F"))  %>% 
   addControl(rr, position = "bottomright") %>% 
   addControl(park_access, position = "topleft") 
 
@@ -92,7 +92,7 @@ map <-
 map
 
 
-mapshot(map, file = "figures/median_income.png", 
+mapview::mapshot(map, file = "visuals/temp_park_access_map.png", 
         vwidth = 900, vheight = 870)
 
-saveWidget(map, file = "figures/median_income.html")
+saveWidget(map, file = "visuals/temp_park_access_map.html")
