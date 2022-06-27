@@ -47,10 +47,10 @@ Methodologies can be referenced in the links for each of the data sources above.
 
 #### Scripts
 
-- [00_load_depencies.R] (https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/00_load_dependencies.R): Run this script first to load the necessary packages and functions. 
+- [00_load_depencies.R](https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/00_load_dependencies.R): Run this script first to load the necessary packages and functions. 
 
-- [05_nta_equity_correlations.R] (https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/05_nta_equity_correlations.R): This script create the correlation plot between canopy coverage and surface temperature in a neighborhood. 
+- [05_nta_equity_correlations.R](https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/05_nta_equity_correlations.R): This script create the correlation plot between canopy coverage and surface temperature in a neighborhood. 
 
-- [07_SurfaceTemp_ParkAccess_Map.R] (https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/07_SurfaceTemp_ParkAccess_Map.R): This script creates the surface temperature and park access map. 
+- [07_SurfaceTemp_ParkAccess_Map.R](https://github.com/NewYorkCityCouncil/tree_canopy_2022/blob/main/code/07_SurfaceTemp_ParkAccess_Map.R): This script creates the surface temperature and park access map. 
 
 - Other scripts are not used for final images. 
