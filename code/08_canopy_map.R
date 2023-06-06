@@ -42,7 +42,7 @@ nta = nta %>%
 breaks = classInt::classIntervals(nta$canopy_2017_pct, n = 5, style = 'jenks')$brks
 
 pal = colorBin(
-  palette = rev(colorRampPalette(c("darkgreen", "#E1EFE4"))(5)), 
+  palette = rev(colorRampPalette(c("#005A00", "#E1EFE4"))(5)), 
   bins = round(breaks),
   domain = nta$canopy_2017_pct,
   na.color = "white",
@@ -59,7 +59,8 @@ map = leaflet::leaflet(options = leafletOptions(attributionControl=FALSE,
   addPolygons(data = nta, fillColor = ~pal(canopy_2017_pct), weight = 0.5, 
               color = ~pal(canopy_2017_pct), fillOpacity = 1, 
               popup = ~label) %>%
-  addCouncilStyle(add_dists = TRUE) %>%
+  addCouncilStyle(add_dists = TRUE, 
+                  highlight_dists = c(6, 23, 51, 10), highlight_color = "#E1EFE4") %>%
   addLegend_decreasing(position = "topleft", pal = pal, 
                        title = paste0("% area that is tree canopy"),  
                        values = c(0, 1), opacity = 1, decreasing = T, 
