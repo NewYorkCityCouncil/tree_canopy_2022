@@ -42,7 +42,7 @@ nta = nta %>%
 breaks = classInt::classIntervals(nta$canopy_2017_pct, n = 5, style = 'jenks')$brks
 
 pal = colorBin(
-  palette = rev(colorRampPalette(c("#E1EFE4", "darkgreen"))(5)), 
+  palette = rev(colorRampPalette(c("darkgreen", "#E1EFE4"))(5)), 
   bins = round(breaks),
   domain = nta$canopy_2017_pct,
   na.color = "white",
