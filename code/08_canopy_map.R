@@ -69,5 +69,40 @@ map = leaflet::leaflet(options = leafletOptions(attributionControl=FALSE,
 saveWidget(map, file=file.path('visuals', 
                                "NTA_canopy_cover.html"))
 
+################################################################################
+# plot city canopy coverage
+################################################################################
+
+breaks = classInt::classIntervals(nta$netcanopychange_percent, n = 5, style = 'jenks')$brks
+
+pal = colorBin(
+  palette = rev(colorRampPalette(c("darkgreen", "#FEFEDA", "#444444"))(5)), 
+  bins = c(-4, -2, -1, 1, 2, 4),
+  domain = nta$netcanopychange_percent,
+  na.color = "white",
+)
+
+
+map = leaflet::leaflet(options = leafletOptions(attributionControl=FALSE, 
+                                                zoomControl = FALSE, 
+                                                minZoom = 10, 
+                                                maxZoom = 15)) %>%
+  addPolygons(data = nta, fillColor = ~pal(netcanopychange_percent), 
+              weight = 0.5, color = ~pal(netcanopychange_percent), 
+              fillOpacity = 1, popup = ~label) %>%
+  addCouncilStyle(add_dists = TRUE, 
+                  highlight_dists = c(33, 34, 35, 39, 36, 41, 42, 43, 1, 7, 8, 
+                                      9, 10, 16, 17, 18, 14, 15, 12, 49, 51, 38, 
+                                      23, 28, 30, 45), 
+                  highlight_color = "#FEFEDA") %>%
+  addLegend_decreasing(position = "topleft", pal = pal, 
+                       title = paste0("% change in tree canopy (2010-2017)"),  
+                       values = c(0, 1), opacity = 1, decreasing = T, 
+                       labFormat = labelFormat(suffix = "%"), 
+                       na.label = "NA")
+
+saveWidget(map, file=file.path('visuals', 
+                               "NTA_canopy_cover_change.html"))
+
 plot(st_geometry(nta))
 plot(add=T, ej_areas, border="red")
